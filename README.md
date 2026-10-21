@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/k9-emblem.svg" width="230" alt="K9 emblem"></p>
+
 # K9 🐕
 
 *Uyuşturucu arama köpeklerine ithafen: köpek bavulu koklar, açmaz.
@@ -10,6 +12,20 @@ kullanır (60+ desen — sürümle değişir, AST analizi, taint tracking, YARA)
 K9'un kendi katkısı
 taramanın etrafındaki disiplindir: karantina, salt-okur inceleme,
 insan-onay kapısı ve rapor arşivi.
+
+## English summary
+
+K9 is a quarantine-and-approval discipline wrapped around
+[NVIDIA SkillSpector](https://github.com/NVIDIA/SkillSpector) for screening
+third-party agent skills, MCP servers and downloaded tools **before**
+installation. Like a detection dog: the dog sniffs the luggage, the customs
+officer opens it — K9 scans and reports, the human decides. Scanned content
+is treated as data, never as instructions (prompt-injection defense); nothing
+from the target is ever executed during screening; `--caged` mode runs the
+scan in a no-network container. Ships as a Claude Code skill (`SKILL.md`)
+plus a single bash orchestrator (`scripts/k9-scan.sh`). Reports land in
+`~/k9/reports/` with an explicit human decision box. Docs are in Turkish;
+the protocol file (`SKILL.md`) is in English.
 
 ## Tasarım ilkeleri
 
@@ -70,3 +86,7 @@ kere düşünen insandır.
   `--fail-on-findings` bayrağı scriptte `--strict` olarak sunulur.
   v2.10.0+ gizli/iç içe ZIP'leri de tarar; v2.11.1+ gizlenmiş talimat
   (concealed instruction) tespitini güçlendirdi.
+
+## Lisans
+
+[Apache-2.0](LICENSE) — tarama motoru SkillSpector ile aynı lisans ailesi.
