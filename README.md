@@ -2,7 +2,7 @@
 
 # K9 🐕
 
-**TR** — *Uyuşturucu arama köpeklerine ithafen: köpek bavulu koklar, açmaz.
+**TR** — *Arama köpeklerine ithafen: köpek bavulu koklar, açmaz.
 Kararı gümrük memuru verir.*
 
 K9, üçüncü parti ajan skill'lerini / MCP sunucularını / indirilen araçları
