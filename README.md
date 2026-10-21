@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/k9-logo.svg" width="300" alt="K9 logo"></p>
+<p align="center"><img src="assets/k9-logo.png" width="300" alt="K9 logo"></p>
 
 # K9 🐕
 
