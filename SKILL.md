@@ -33,7 +33,8 @@ officer opens it.** K9 never decides. The human decides.
    OSV.dev (SkillSpector's built-in CVE lookup, package names only). No
    other egress during screening. LLM analysis stage sends file contents to
    the configured provider — only run it with the provider the user has
-   approved for that target (currently: Anthropic/Claude; local Qwen planned).
+   approved for that target (currently: Anthropic/Claude; fully local
+   analysis is available via SkillSpector's `ollama` provider, v2.9.5+).
 
 ## Screening procedure
 

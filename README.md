@@ -6,7 +6,8 @@ Kararı gümrük memuru verir.*
 K9, üçüncü parti ajan skill'lerini / MCP sunucularını / araçları **kurmadan
 önce** zorunlu güvenlik taramasından geçiren bir protokoldür. Tarama motoru
 olarak [NVIDIA SkillSpector](https://github.com/NVIDIA/SkillSpector)
-kullanır (68 desen, AST analizi, taint tracking, YARA); K9'un kendi katkısı
+kullanır (60+ desen — sürümle değişir, AST analizi, taint tracking, YARA);
+K9'un kendi katkısı
 taramanın etrafındaki disiplindir: karantina, salt-okur inceleme,
 insan-onay kapısı ve rapor arşivi.
 
@@ -22,7 +23,9 @@ insan-onay kapısı ve rapor arşivi.
 ## Kurulum
 
 ```bash
-# Önkoşullar: skillspector (uv tool install ...), isteğe bağlı OrbStack
+# Önkoşullar (PyPI'da yok, resmi repodan kurulur; test edilen sürüm: v2.13.0):
+#   uv tool install "git+https://github.com/NVIDIA/SkillSpector@v2.13.0"
+# İsteğe bağlı: Docker/OrbStack (--caged modu için)
 mkdir -p ~/k9 && cp -R k9/* ~/k9/            # bu repo -> ~/k9
 chmod +x ~/k9/scripts/k9-scan.sh
 mkdir -p ~/.claude/skills/k9 && cp ~/k9/SKILL.md ~/.claude/skills/k9/
@@ -36,6 +39,7 @@ ajan, herhangi bir skill kurulumu istendiğinde önce K9'u uygular.
 ```bash
 ~/k9/scripts/k9-scan.sh https://github.com/birisi/bir-skill      # standart
 ~/k9/scripts/k9-scan.sh ~/indirilenler/supheli-paket --caged     # tam kafes
+~/k9/scripts/k9-scan.sh ./bir-skill --strict      # bulgu varsa exit 1 (CI)
 ```
 
 Çıktılar `~/k9/reports/` altında: envanter, JSON + okunur tarama raporu ve
@@ -57,3 +61,12 @@ kanıttır, garanti değildir. Güvenilir 1. parti skill'lerde yüksek statik
 skor normaldir (subprocess vb. meşru kullanım) — 2. aşama (anlamsal
 inceleme) tam bu yüzden vardır. En iyi guardrail hâlâ, kurmadan önce iki
 kere düşünen insandır.
+
+## Sürüm notları
+
+- **SkillSpector v2.13.0 ile test edildi** (2026-10-21). v2.9.5'ten beri
+  `ollama` sağlayıcısı var: 2. aşama (anlamsal inceleme) artık dosya içeriği
+  dışarı gitmeden yerel modelle yapılabilir. v2.12.0'daki
+  `--fail-on-findings` bayrağı scriptte `--strict` olarak sunulur.
+  v2.10.0+ gizli/iç içe ZIP'leri de tarar; v2.11.1+ gizlenmiş talimat
+  (concealed instruction) tespitini güçlendirdi.

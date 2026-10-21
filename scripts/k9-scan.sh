@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # K9 — quarantine + scan orchestrator (read-only by design)
-# Usage: k9-scan.sh <git-url | local-path> [--caged]
+# Usage: k9-scan.sh <git-url | local-path> [--caged] [--strict]
 #   default : quarantine + skillspector static scan (egress: OSV.dev only,
 #             via SkillSpector's own CVE lookup — package names, no content)
 #   --caged : run the scan inside a no-network Docker/OrbStack container
 #             (CVE check falls back to SkillSpector's offline list)
+#   --strict: pass --fail-on-findings to skillspector (v2.12.0+) and exit 1
+#             when the scan reports any finding — for CI / pre-commit gates
 set -euo pipefail
 
 K9_HOME="${K9_HOME:-$HOME/k9}"
@@ -12,8 +14,15 @@ QUARANTINE="$K9_HOME/quarantine"
 REPORTS="$K9_HOME/reports"
 mkdir -p "$QUARANTINE" "$REPORTS"
 
-TARGET="${1:?Usage: k9-scan.sh <git-url|local-path> [--caged]}"
-MODE="${2:-}"
+TARGET="${1:?Usage: k9-scan.sh <git-url|local-path> [--caged] [--strict]}"
+CAGED=0; STRICT=0
+for ARG in "${@:2}"; do
+  case "$ARG" in
+    --caged)  CAGED=1 ;;
+    --strict) STRICT=1 ;;
+    *) echo "[K9] Unknown option: $ARG" >&2; exit 2 ;;
+  esac
+done
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 # ── Stage 0: Quarantine ──────────────────────────────────────────────
@@ -46,17 +55,20 @@ REPORT_BASE="$REPORTS/$NAME-$STAMP"
 echo "[K9] Inventory -> $REPORT_BASE-inventory.txt"
 
 # ── Stage 2-3: SkillSpector static scan ──────────────────────────────
-if [[ "$MODE" == "--caged" ]]; then
+SCAN_FLAGS=(--no-llm)
+[[ "$STRICT" == 1 ]] && SCAN_FLAGS+=(--fail-on-findings)
+SCAN_RC=0
+if [[ "$CAGED" == 1 ]]; then
   echo "[K9] Caged scan (no network; offline CVE fallback)"
   docker run --rm --network none -v "$DEST":/scan:ro skillspector \
-    scan /scan --no-llm --format json --output /dev/stdout \
-    > "$REPORT_BASE-scan.json" || true
+    scan /scan "${SCAN_FLAGS[@]}" --format json --output /dev/stdout \
+    > "$REPORT_BASE-scan.json" || SCAN_RC=$?
   docker run --rm --network none -v "$DEST":/scan:ro skillspector \
     scan /scan --no-llm | tee "$REPORT_BASE-scan.txt" || true
 else
   echo "[K9] Static scan (egress: api.osv.dev only, dependency names)"
-  skillspector scan "$DEST" --no-llm --format json \
-    --output "$REPORT_BASE-scan.json" || true
+  skillspector scan "$DEST" "${SCAN_FLAGS[@]}" --format json \
+    --output "$REPORT_BASE-scan.json" || SCAN_RC=$?
   skillspector scan "$DEST" --no-llm | tee "$REPORT_BASE-scan.txt" || true
 fi
 
@@ -84,3 +96,8 @@ PY
 echo
 echo "[K9] Reports: $REPORT_BASE-{inventory.txt,scan.json,scan.txt,DECISION.md}"
 echo "[K9] Quarantine kept at: $DEST  (move only after an 'install' decision)"
+
+if [[ "$STRICT" == 1 && "$SCAN_RC" -ne 0 ]]; then
+  echo "[K9] STRICT MODE: scan reported findings (skillspector exit $SCAN_RC)" >&2
+  exit 1
+fi
