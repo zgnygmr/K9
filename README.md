@@ -265,6 +265,36 @@ best guardrail is still a human who thinks twice before installing.
 - v2.10.0+ gizli/iç içe ZIP taraması · hidden/nested ZIP scanning;
   v2.11.1+ gizlenmiş talimat tespiti · concealed-instruction detection.
 
+## İlgili çalışmalar · Related work
+
+**TR** — K9, *ithal ettiğiniz* kodu (üçüncü parti skill/MCP/araç) kurulum
+öncesi tarar ve sonrasında bütünlüğünü izler. Komşu alanlardaki araçlar:
+
+- [NVIDIA SkillSpector](https://github.com/NVIDIA/SkillSpector) — K9'un
+  tarama motoru; tek başına tarayıcıdır, K9 etrafına karantina + onay +
+  makbuz disiplinini ekler.
+- [SkillGuardrail](https://github.com/T-Zevin/SkillGuardrail) — benzer
+  karantina-tara-karar yaklaşımı; politika motoru ve kurulum makbuzlarıyla
+  akraba bir proje.
+- [Claude Security](https://claude.com/resources/articles/claude-security-now-scans-continuously-and-tracks-fixes)
+  — *kendi yazdığınız* kodun sürekli taranması ve bulgu takibi (Enterprise).
+  K9 ile tamamlayıcıdır: biri ürettiğinizi, diğeri ithal ettiğinizi denetler.
+
+**EN** — K9 screens the code you *import* (third-party skills/MCP/tools)
+before installation and watches its integrity afterwards. Neighbouring
+tools:
+
+- [NVIDIA SkillSpector](https://github.com/NVIDIA/SkillSpector) — K9's
+  scan engine; a scanner on its own, around which K9 adds the quarantine +
+  approval + receipt discipline.
+- [SkillGuardrail](https://github.com/T-Zevin/SkillGuardrail) — a similar
+  quarantine-scan-decide approach; a kindred project with a policy engine
+  and install receipts.
+- [Claude Security](https://claude.com/resources/articles/claude-security-now-scans-continuously-and-tracks-fixes)
+  — continuous scanning and fix tracking for the code you *write*
+  (Enterprise). Complementary to K9: one audits what you produce, the
+  other what you import.
+
 ## Lisans · License
 
 [Apache-2.0](LICENSE) — tarama motoru SkillSpector ile aynı lisans ailesi ·
