@@ -80,10 +80,25 @@ DECISION (human only): [ ] install  [ ] reject  [ ] needs deeper review
 
 ## After approval
 
-Only after an explicit "install" decision: move (never copy-and-forget)
-the quarantined directory to its destination, record destination path in
-the report footer, and delete the quarantine copy. If rejected: delete the
-quarantine directory and keep the report.
+Only after an explicit "install" decision, run
+`scripts/k9-approve.sh <quarantine-dir> <destination>` — it writes an
+approval receipt to `~/k9/receipts/` (source target, git commit if any,
+SHA-256 manifest of every installed file, SkillSpector version), moves
+(never copy-and-forget) the quarantined directory to its destination, and
+re-verifies the manifest after the move. If the script is unavailable,
+replicate: record source+commit+per-file SHA-256, then move. If rejected:
+delete the quarantine directory and keep the report.
+
+## Leash check (integrity verification)
+
+`scripts/k9-verify.sh` compares every receipted install against its
+SHA-256 manifest; `k9-verify.sh <destination>` checks one target.
+Exit 0 = all 🟢; exit 1 = 🔴 DRIFT (changed/added/removed files) or a
+missing target. **Any DRIFT means the target is no longer the thing that
+was screened: treat it as unscreened — quarantine and re-run the full
+screening before continued use.** Approval is point-in-time; updates are
+the classic supply-chain attack path, so run the leash check periodically
+(e.g. a weekly scheduled task) and before security-sensitive work.
 
 ## Batch audit mode
 

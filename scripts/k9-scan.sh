@@ -38,6 +38,22 @@ else
   cp -R "$TARGET" "$DEST"
 fi
 
+# record provenance for the approval receipt (read by k9-approve.sh)
+python3 - "$DEST" "$TARGET" <<'PYSRC'
+import datetime, json, os, subprocess, sys
+dest, target = sys.argv[1], sys.argv[2]
+info = {"target": target, "type": "local",
+        "quarantined_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
+if os.path.isdir(os.path.join(dest, ".git")):
+    info["type"] = "git"
+    try:
+        info["commit"] = subprocess.run(["git", "-C", dest, "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        info["commit"] = None
+json.dump(info, open(os.path.join(dest, ".k9-source.json"), "w"), indent=1)
+PYSRC
+
 REPORT_BASE="$REPORTS/$NAME-$STAMP"
 
 # ── Stage 1: Inventory ───────────────────────────────────────────────
@@ -95,7 +111,8 @@ PY
 
 echo
 echo "[K9] Reports: $REPORT_BASE-{inventory.txt,scan.json,scan.txt,DECISION.md}"
-echo "[K9] Quarantine kept at: $DEST  (move only after an 'install' decision)"
+echo "[K9] Quarantine kept at: $DEST"
+echo "[K9] After a human 'install' decision: scripts/k9-approve.sh $DEST <destination>"
 
 if [[ "$STRICT" == 1 && "$SCAN_RC" -ne 0 ]]; then
   echo "[K9] STRICT MODE: scan reported findings (skillspector exit $SCAN_RC)" >&2

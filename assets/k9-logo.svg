@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>K9 logo</title>
+  <rect width="1024" height="1024" fill="#000000"/>
+  <g fill="#ffffff">
+    <!-- back ear -->
+    <polygon points="470,110 380,400 420,380 540,330"/>
+    <!-- front ear -->
+    <polygon points="670,150 590,350 660,330 740,330"/>
+    <!-- head, muzzle, neck, chest -->
+    <polygon points="380,400 420,380 540,330 560,340 590,350 660,330 740,330 770,380 780,420 920,470 955,505 935,545 810,560 790,590 700,640 660,760 590,900 480,760 360,740 430,640 340,600 420,520"/>
+  </g>
+  <g fill="#000000">
+    <!-- inner-ear cuts -->
+    <polygon points="468,175 424,350 498,318"/>
+    <polygon points="658,215 628,330 700,316"/>
+    <!-- brow slash -->
+    <polygon points="640,388 770,402 762,434 632,416"/>
+    <!-- eye patch -->
+    <polygon points="688,428 782,444 730,482"/>
+    <!-- nostril -->
+    <circle cx="912" cy="505" r="11"/>
+    <!-- cheek / mouth wedge -->
+    <polygon points="724,556 830,552 790,590 700,640 676,602"/>
+    <!-- neck facet gaps -->
+    <polygon points="468,556 498,578 430,700 404,676"/>
+    <polygon points="528,636 558,662 500,780 474,750"/>
+  </g>
+  <!-- eye highlight -->
+  <polygon points="708,443 756,451 724,468" fill="#ffffff"/>
+</svg>
