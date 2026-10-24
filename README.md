@@ -38,8 +38,10 @@ continuous integrity checking.
   çalıştırılmaz; içeriği veridir, komut değildir (prompt injection savunması).
 - 📋 **Envanter** — gizli dosyalar, çalıştırılabilir izinler, beklenmedik
   binary'ler, 5MB+ dosyalar ve dışarı işaret eden symlink'ler raporlanır.
-- 🧪 **SkillSpector statik taraması** — JSON + okunur rapor; `--caged`
-  modunda tamamen ağsız bir Docker konteynerinde.
+- 🧪 **Statik tarama, çift motor** — NVIDIA SkillSpector + (kuruluysa)
+  Cisco skill-scanner birlikte koşar ("iki köpek"); motorlar anlaşamazsa
+  2. aşama incelemesi zorunlu ilan edilir. `--caged` modunda tarama
+  tamamen ağsız bir Docker konteynerinde.
 - 🚦 **İnsan-onay kapısı** — K9 karar vermez; skor 0 bile olsa kurulum
   kararı rapor üzerinden insana aittir.
 - 🧾 **Onay makbuzu** *(yeni)* — "kur" kararında kaynak (git URL + commit),
@@ -59,8 +61,10 @@ continuous integrity checking.
   review; its content is data, not instructions (prompt-injection defense).
 - 📋 **Inventory** — hidden files, executable permissions, unexpected
   binaries, 5MB+ files and symlinks pointing outside the tree are reported.
-- 🧪 **SkillSpector static scan** — JSON + human-readable report; `--caged`
-  mode runs it in a fully network-less Docker container.
+- 🧪 **Static scan, dual engine** — NVIDIA SkillSpector + (when installed)
+  Cisco skill-scanner run together ("two dogs"); if the engines disagree,
+  stage-2 review is declared mandatory. `--caged` mode runs the scan in a
+  fully network-less Docker container.
 - 🚦 **Human-approval gate** — K9 never decides; even a score of 0 requires
   a human "install" decision on the report.
 - 🧾 **Approval receipt** *(new)* — on an "install" decision the source
@@ -110,6 +114,8 @@ k9-verify.sh ◄── receipts/ ◄── k9-approve.sh ◄──────�
 ```bash
 # Önkoşul: SkillSpector (PyPI'da yok; resmi repodan — test edilen sürüm v2.13.0)
 uv tool install "git+https://github.com/NVIDIA/SkillSpector@v2.13.0"
+# İsteğe bağlı 2. motor ("iki köpek"): Cisco skill-scanner (test: v2.3.1)
+uv tool install cisco-ai-skill-scanner
 # İsteğe bağlı: Docker/OrbStack (--caged modu için)
 
 git clone https://github.com/zgnygmr/k9 ~/k9
@@ -127,6 +133,8 @@ Capabilities → Skills altından yükleyin.)
 ```bash
 # Prerequisite: SkillSpector (not on PyPI; from the official repo — tested with v2.13.0)
 uv tool install "git+https://github.com/NVIDIA/SkillSpector@v2.13.0"
+# Optional second engine ("two dogs"): Cisco skill-scanner (tested: v2.3.1)
+uv tool install cisco-ai-skill-scanner
 # Optional: Docker/OrbStack (for --caged mode)
 
 git clone https://github.com/zgnygmr/k9 ~/k9
@@ -264,6 +272,9 @@ best guardrail is still a human who thinks twice before installing.
 - v2.12.0 `--fail-on-findings` → K9'da `--strict` · exposed as `--strict`.
 - v2.10.0+ gizli/iç içe ZIP taraması · hidden/nested ZIP scanning;
   v2.11.1+ gizlenmiş talimat tespiti · concealed-instruction detection.
+- İkinci motor: **cisco-ai-skill-scanner v2.3.1** ile test edildi · second
+  engine tested with v2.3.1 (CVE-2026-26057 yalnızca ≤1.0.1 + API sunucusu
+  açıkken geçerliydi · affected only ≤1.0.1 with the API server running).
 
 ## İlgili çalışmalar · Related work
 
@@ -276,6 +287,9 @@ best guardrail is still a human who thinks twice before installing.
 - [SkillGuardrail](https://github.com/T-Zevin/SkillGuardrail) — benzer
   karantina-tara-karar yaklaşımı; politika motoru ve kurulum makbuzlarıyla
   akraba bir proje.
+- [Cisco skill-scanner](https://github.com/cisco-ai-defense/skill-scanner)
+  — Cisco AI Defense'in skill tarayıcısı (YARA-X, CEL karar katmanı,
+  davranışsal analiz); K9'da isteğe bağlı ikinci motor olarak desteklenir.
 - [Claude Security](https://claude.com/resources/articles/claude-security-now-scans-continuously-and-tracks-fixes)
   — *kendi yazdığınız* kodun sürekli taranması ve bulgu takibi (Enterprise).
   K9 ile tamamlayıcıdır: biri ürettiğinizi, diğeri ithal ettiğinizi denetler.
@@ -290,6 +304,9 @@ tools:
 - [SkillGuardrail](https://github.com/T-Zevin/SkillGuardrail) — a similar
   quarantine-scan-decide approach; a kindred project with a policy engine
   and install receipts.
+- [Cisco skill-scanner](https://github.com/cisco-ai-defense/skill-scanner)
+  — Cisco AI Defense's skill scanner (YARA-X, CEL decision layer,
+  behavioral analysis); supported as an optional second engine in K9.
 - [Claude Security](https://claude.com/resources/articles/claude-security-now-scans-continuously-and-tracks-fixes)
   — continuous scanning and fix tracking for the code you *write*
   (Enterprise). Complementary to K9: one audits what you produce, the

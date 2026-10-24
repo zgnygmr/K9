@@ -5,8 +5,9 @@ description: Mandatory security screening protocol for installing ANY third-part
 
 # K9 — Skill Security Screening Protocol
 
-K9 wraps the SkillSpector scanner (registered as an MCP server, also available
-as the `skillspector` CLI) in a strict quarantine-and-approval discipline.
+K9 wraps static skill scanners (NVIDIA SkillSpector and, when installed,
+Cisco's `skill-scanner` CLI — both engines run as "two dogs" when present)
+in a strict quarantine-and-approval discipline.
 The metaphor is a detection dog: **the dog sniffs the luggage; the customs
 officer opens it.** K9 never decides. The human decides.
 
@@ -35,6 +36,8 @@ officer opens it.** K9 never decides. The human decides.
    the configured provider — only run it with the provider the user has
    approved for that target (currently: Anthropic/Claude; fully local
    analysis is available via SkillSpector's `ollama` provider, v2.9.5+).
+   The Cisco engine's cloud integrations (AI Defense, VirusTotal, LLM
+   judge) stay OFF during screening.
 
 ## Screening procedure
 
@@ -49,7 +52,11 @@ steps manually in this order:
    executable-permission files, unexpected binaries, files >5MB in a
    "instructions-only" skill, and symlinks pointing outside the tree.
 3. **Static scan** — `skillspector scan <dir> --no-llm --format json`
-   plus a terminal-format run for the human-readable view.
+   plus a terminal-format run for the human-readable view. If Cisco's
+   `skill-scanner` CLI is also installed, `k9-scan.sh` runs it as a second
+   engine (local analyzers only — never `--use-llm`, AI Defense or
+   VirusTotal during screening). When the two engines disagree, stage-2
+   semantic review is mandatory, not optional.
 4. **Semantic review (stage 2)** — with the approved LLM provider, or by
    the reviewing agent itself: for each HIGH/CRITICAL finding, read the
    flagged lines in context and answer: does the code's behavior match the

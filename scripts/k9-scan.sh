@@ -70,11 +70,20 @@ REPORT_BASE="$REPORTS/$NAME-$STAMP"
 } > "$REPORT_BASE-inventory.txt"
 echo "[K9] Inventory -> $REPORT_BASE-inventory.txt"
 
-# ── Stage 2-3: SkillSpector static scan ──────────────────────────────
+# ── Stage 2-3: static scan (dual engine: "two dogs" when both exist) ─
+HAVE_SS=0; HAVE_CS=0
+command -v skillspector >/dev/null 2>&1 && HAVE_SS=1
+command -v skill-scanner >/dev/null 2>&1 && HAVE_CS=1
+if [[ "$HAVE_SS" == 0 && "$HAVE_CS" == 0 ]]; then
+  echo "[K9] WARNING: no scan engine installed (skillspector / skill-scanner)" >&2
+fi
+
 SCAN_FLAGS=(--no-llm)
 [[ "$STRICT" == 1 ]] && SCAN_FLAGS+=(--fail-on-findings)
 SCAN_RC=0
-if [[ "$CAGED" == 1 ]]; then
+if [[ "$HAVE_SS" == 0 ]]; then
+  : # SkillSpector not installed; skip
+elif [[ "$CAGED" == 1 ]]; then
   echo "[K9] Caged scan (no network; offline CVE fallback)"
   docker run --rm --network none -v "$DEST":/scan:ro skillspector \
     scan /scan "${SCAN_FLAGS[@]}" --format json --output /dev/stdout \
@@ -88,21 +97,55 @@ else
   skillspector scan "$DEST" --no-llm | tee "$REPORT_BASE-scan.txt" || true
 fi
 
+# Cisco skill-scanner (second dog) — local analyzers only: no --use-llm,
+# no AI Defense / VirusTotal cloud calls (their defaults are off)
+CISCO_RC=0
+if [[ "$HAVE_CS" == 1 ]]; then
+  if [[ "$CAGED" == 1 ]]; then
+    echo "[K9] Caged mode: skipping skill-scanner (no caged wrapper yet)"
+  else
+    echo "[K9] Second dog: cisco skill-scanner (local analyzers only)"
+    CS_FLAGS=(--lenient)
+    [[ "$STRICT" == 1 ]] && CS_FLAGS+=(--fail-on-findings)
+    skill-scanner scan "$DEST" "${CS_FLAGS[@]}" --format json \
+      --output "$REPORT_BASE-cisco.json" || CISCO_RC=$?
+    skill-scanner scan "$DEST" --lenient --format table \
+      --output "$REPORT_BASE-cisco.txt" || true
+  fi
+fi
+
 # ── Stage 6: Summary + decision box ──────────────────────────────────
-python3 - "$REPORT_BASE-scan.json" <<'PY' | tee "$REPORT_BASE-DECISION.md"
-import json, sys
-try:
-    d = json.load(open(sys.argv[1]))
-except Exception as e:
-    print(f"[K9] Could not parse scan JSON ({e}) — inspect the .txt report."); sys.exit(0)
-r = d.get("risk_assessment", {})
-score, sev, rec = r.get("score","?"), r.get("severity","?"), r.get("recommendation","?")
-dog = {"SAFE":"🟢/🟡 sniffed, no alert","CAUTION":"🟠 SAT DOWN","DO_NOT_INSTALL":"🔴 BARKED"}.get(rec,"?")
-print(f"# K9 VERDICT: {dog}")
-print(f"SkillSpector: {score}/100 · {sev} · {rec}")
-print(f"Findings: {len(d.get('issues',[]))} "
-      f"(exec scripts present: {d.get('metadata',{}).get('has_executable_scripts')})")
+python3 - "$REPORT_BASE-scan.json" "$REPORT_BASE-cisco.json" <<'PY' | tee "$REPORT_BASE-DECISION.md"
+import json, os, sys
+
+def load(p):
+    try:
+        return json.load(open(p))
+    except Exception:
+        return None
+
+ss, cs = load(sys.argv[1]), load(sys.argv[2])
+if ss is None and cs is None:
+    print("[K9] No engine report parsed — inspect the .txt reports."); sys.exit(0)
+
+verdicts = []
+if ss is not None:
+    r = ss.get("risk_assessment", {})
+    score, sev, rec = r.get("score","?"), r.get("severity","?"), r.get("recommendation","?")
+    dog = {"SAFE":"🟢/🟡 sniffed, no alert","CAUTION":"🟠 SAT DOWN","DO_NOT_INSTALL":"🔴 BARKED"}.get(rec,"?")
+    verdicts.append(rec in ("CAUTION","DO_NOT_INSTALL"))
+    print(f"# K9 DOG 1 — SkillSpector: {dog}")
+    print(f"  {score}/100 · {sev} · {rec} · findings: {len(ss.get('issues',[]))} "
+          f"(exec scripts: {ss.get('metadata',{}).get('has_executable_scripts')})")
+if cs is not None:
+    safe, msev, n = cs.get("is_safe"), cs.get("max_severity","?"), cs.get("findings_count","?")
+    dog = "🟢/🟡 sniffed, no alert" if safe else ("🔴 BARKED" if str(msev).lower() in ("critical","high") else "🟠 SAT DOWN")
+    verdicts.append(not safe)
+    print(f"# K9 DOG 2 — cisco skill-scanner: {dog}")
+    print(f"  max_severity: {msev} · findings: {n} · is_safe: {safe}")
 print()
+if len(verdicts) == 2 and verdicts[0] != verdicts[1]:
+    print("NOTE: the dogs DISAGREE — stage-2 semantic review is mandatory.")
 print("Reminder: static scan only — stage-2 semantic review pending;")
 print("a clean scan is evidence, not a guarantee.")
 print()
@@ -114,7 +157,7 @@ echo "[K9] Reports: $REPORT_BASE-{inventory.txt,scan.json,scan.txt,DECISION.md}"
 echo "[K9] Quarantine kept at: $DEST"
 echo "[K9] After a human 'install' decision: scripts/k9-approve.sh $DEST <destination>"
 
-if [[ "$STRICT" == 1 && "$SCAN_RC" -ne 0 ]]; then
-  echo "[K9] STRICT MODE: scan reported findings (skillspector exit $SCAN_RC)" >&2
+if [[ "$STRICT" == 1 && ( "$SCAN_RC" -ne 0 || "$CISCO_RC" -ne 0 ) ]]; then
+  echo "[K9] STRICT MODE: findings reported (skillspector exit $SCAN_RC, skill-scanner exit $CISCO_RC)" >&2
   exit 1
 fi
